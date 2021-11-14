@@ -18,6 +18,7 @@ public:
 	map<string, bool> PrimeImplicant;
 	map<string, bool> Origin;
 	map<string, bool> Temp; // 包含dont care項
+	map<string, bool> DontCare;
 	map<string, char> Input;
 	vector<int> Origin_num; // 數字紀錄1 2 10 13項
 
@@ -28,7 +29,7 @@ public:
 
 	void input(string inputFileName)
 	{
-		fstream inputFile(inputFileName);
+		ifstream inputFile(inputFileName);
 
 		string command;
 		while (inputFile >> command)
@@ -98,11 +99,13 @@ public:
 
 				if (flag && it->second != '-')
 				{
+					Origin[key] = true;
 					Temp[key] = true;
 				}
 				else if (flag && it->second == '-')
 				{
-					Origin[key] = true;
+					DontCare[key] = true;
+					Temp[key] = true;
 				}
 			}
 		}
@@ -110,12 +113,13 @@ public:
 
 	map<string, bool> reduce(map<string, bool> temps)
 	{
+		//auto test = temps.end();
 		auto tempsEnd1 = --temps.end();
 		auto tempsBegin1 = ++temps.begin();
 		map<string, bool> checked;
 
 		map<string, bool> newTemp;
-		for (auto i = temps.begin(); i != tempsEnd1; i++)
+		for (auto i = temps.begin(); i != temps.end(); i++)
 		{
 			checked[i->first] = false;
 		}
@@ -150,7 +154,13 @@ public:
 
 	void minterm()
 	{
-		EPI();
+		EPI(); // ckecked
+
+		if (Origin.size() > 0) // 還有剩的
+		{
+			petrick();
+		}
+
 	}
 
 	string intToString(int num) // 3 to 0011 
@@ -209,12 +219,14 @@ public:
 
 	void EPI()
 	{
-		set<int> EPIs;
-
+		// set<int> EPIs;
+		vector<string> EPIs_string;
 		for (auto O_it = Origin.begin(); O_it != Origin.end(); O_it++)
 		{
+			string EPI_string;
 			int EPI_num = -1;
-			for (map<string, bool>::iterator PI_it = PrimeImplicant.begin(), int i = 0; PI_it != PrimeImplicant.end(); PI_it++, i++)
+			int i = 0;
+			for (map<string, bool>::iterator PI_it = PrimeImplicant.begin(); PI_it != PrimeImplicant.end(); PI_it++)
 			{
 				bool IsEPI = true;
 				for (int j = 0; j < PI_it->first.size(); j++)
@@ -232,18 +244,59 @@ public:
 						EPI_num = -1;
 						break;
 					}
+					EPI_string = PI_it->first;
 					EPI_num = i;
 				}
+				i++;
 			}
 			if (EPI_num != -1)
 			{
-				EPIs.insert(EPI_num);
+				// EPIs.insert(EPI_num);
+				EPIs_string.push_back(EPI_string);
 			}
 		}
-		for (set<int>::reverse_iterator i = EPIs.rbegin(), map<string, bool>::iterator PI_it = PrimeImplicant.begin(); i != EPIs.rend(); i++)
+		for (int i = EPIs_string.size() - 1; i >= 0; i--)
 		{
-			Minterm[PrimeImplicant[*i]]
+			Minterm[EPIs_string[i]] = true;
+			bool termEPI = false;
+			for (auto O_it = Origin.begin(); O_it != Origin.end(); O_it++)
+			{
+				if (termEPI)
+				{
+					O_it = Origin.begin();
+				}
+				termEPI = true;
+
+				for (int j = 0; j < O_it->first.size(); j++)
+				{
+					if (EPIs_string[i][j] != '-' && EPIs_string[i][j] != O_it->first[j])
+					{
+						termEPI = false;
+						break;
+					}
+				}
+				if (termEPI)
+				{
+					auto temp_it = O_it;
+					temp_it--;
+					Origin.erase(O_it);
+					if (temp_it != Origin.end())
+					{
+						O_it = temp_it;
+					}
+					else
+					{
+						O_it = Origin.begin();
+					}
+				}
+			}
+			PrimeImplicant.erase(PrimeImplicant.find(EPIs_string[i]));
 		}
+	}
+
+	void petrick()
+	{
+
 	}
 };
 
@@ -252,7 +305,7 @@ public:
 int main(int argc, char* argv[])
 {
 	mini mini1;
-	mini1.PLA_i = 4;
+	//mini1.PLA_i = 4;
 
 	/*mini1.Temp["11-1"] = '-';
 	mini1.Temp["---0"] = '1';
@@ -261,7 +314,26 @@ int main(int argc, char* argv[])
 	test = mini1.intToString(0);
 	cout << test << endl;*/
 
-	mini1.input(argv[1]);
+	//map<string,bool> test1;
+	//test1["-01-"] = 1;
+	//test1["-0-0"] = 1;
+	//test1["1--1"] = 1;
+	//test1["-1-1"] = 1;
+	//test1["--11"] = 1;
+	//test1["10--"] = 1;
+	//set<int> test;
+	//test.insert(3);
+	//test.insert(2);
+	//test.insert(1);
+	//for (auto i = test.rbegin(); i != test.rend(); i++)
+	//{
+	//	/*auto j = test1.begin();
+	//	for(int )*/
+	//	//cout << test1[];
+	//}
+
+	//mini1.input(argv[1]);
+	mini1.input("case1.pla");
 	mini1.change();
 
 	do
